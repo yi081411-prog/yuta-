@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ダイエット診断｜いーちゃんストレッチ</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+      padding: 20px 16px 40px;
+    }
+    .container { max-width: 400px; margin: 0 auto; }
+    h1 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1a1a1a;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 12px;
+    }
+    .field { margin-bottom: 12px; }
+    .field label {
+      display: block;
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 4px;
+    }
+    .field input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 15px;
+      color: #1a1a1a;
+      background: #fafafa;
+    }
+    .field input:focus {
+      outline: none;
+      border-color: #06C755;
+      background: #fff;
+    }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .seg-group {
+      display: flex;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .seg-btn {
+      flex: 1;
+      padding: 9px 4px;
+      font-size: 11px;
+      font-weight: 600;
+      background: #fafafa;
+      color: #888;
+      border: none;
+      cursor: pointer;
+      text-align: center;
+      line-height: 1.4;
+      transition: background .15s, color .15s;
+    }
+    .seg-btn.active { background: #06C755; color: #fff; }
+    .seg-btn:not(:last-child) { border-right: 1px solid #ddd; }
+    .act-note {
+      font-size: 10px;
+      color: #aaa;
+      margin-top: 5px;
+    }
+    .submit-btn {
+      width: 100%;
+      padding: 14px;
+      background: #06C755;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-top: 4px;
+    }
+    .submit-btn:active { opacity: .85; }
+    .error {
+      font-size: 12px;
+      color: #e53935;
+      margin-top: 6px;
+      display: none;
+    }
+    .loading {
+      text-align: center;
+      padding: 40px 0;
+      font-size: 14px;
+      color: #888;
+      display: none;
+    }
+    .spinner {
+      width: 32px; height: 32px;
+      border: 3px solid #eee;
+      border-top-color: #06C755;
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+      margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .done {
+      text-align: center;
+      padding: 40px 0;
+      display: none;
+    }
+    .done-icon { font-size: 48px; margin-bottom: 12px; }
+    .done-text { font-size: 15px; color: #333; line-height: 1.7; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>🔍 ダイエット診断</h1>
+
+  <div id="form-area">
+    <div class="card">
+      <div class="section-title">基本情報</div>
+      <div class="field-row">
+        <div class="field">
+          <label>年齢</label>
+          <input type="number" id="age" placeholder="例: 45" min="20" max="80">
+        </div>
+        <div class="field">
+          <label>性別</label>
+          <div class="seg-group" style="height:42px">
+            <button class="seg-btn active" data-gender="female" onclick="setGender('female',this)">女性</button>
+            <button class="seg-btn" data-gender="male" onclick="setGender('male',this)">男性</button>
+          </div>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>身長 (cm)</label>
+          <input type="number" id="height" placeholder="例: 158" min="140" max="200">
+        </div>
+        <div class="field">
+          <label>体重 (kg)</label>
+          <input type="number" id="weight" placeholder="例: 58" min="30" max="150" step="0.1">
+        </div>
+      </div>
+      <div class="field">
+        <label>目標体重 (kg)</label>
+        <input type="number" id="goal" placeholder="例: 52" min="30" max="150" step="0.1">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">活動レベル</div>
+      <div class="seg-group">
+        <button class="seg-btn active" data-act="1.2" onclick="setAct('1.2',this)">運動して<br>いない</button>
+        <button class="seg-btn" data-act="1.375" onclick="setAct('1.375',this)">週1〜2回<br>の運動</button>
+        <button class="seg-btn" data-act="1.55" onclick="setAct('1.55',this)">週3〜5回<br>の運動</button>
+      </div>
+      <div class="act-note">※散歩・体操10分程度も含む</div>
+    </div>
+
+    <div id="form-error" class="error">※ 年齢・身長・体重・目標体重を入力してください</div>
+    <button class="submit-btn" onclick="submitForm()">診断する</button>
+  </div>
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    診断結果を送信中...
+  </div>
+
+  <div class="done" id="done">
+    <div class="done-icon">✅</div>
+    <div class="done-text">
+      診断結果をLINEに送りました！<br>
+      トーク画面をご確認ください。
+    </div>
+  </div>
+</div>
+
+<script>
+  // ===================================================
+  // ① LIFF IDを書き換える（LINE Developersで取得）
+  // ===================================================
+  const LIFF_ID = "あなたのLIFF-ID";
+
+  // ===================================================
+  // ② GAS URLを書き換える（デプロイ後に取得）
+  // ===================================================
+  const GAS_URL = "あなたのGAS-URL";
+
+  let gender  = "female";
+  let actLevel = 1.2;
+  let userId   = null;
+
+  // LIFF初期化
+  liff.init({ liffId: LIFF_ID }).then(() => {
+    if (!liff.isLoggedIn()) {
+      liff.login();
+      return;
+    }
+    liff.getProfile().then(profile => {
+      userId = profile.userId;
+    });
+  }).catch(err => {
+    console.error("LIFF init error:", err);
+  });
+
+  function setGender(v, el) {
+    gender = v;
+    document.querySelectorAll("[data-gender]").forEach(b => b.classList.remove("active"));
+    el.classList.add("active");
+  }
+
+  function setAct(v, el) {
+    actLevel = parseFloat(v);
+    document.querySelectorAll("[data-act]").forEach(b => b.classList.remove("active"));
+    el.classList.add("active");
+  }
+
+  function submitForm() {
+    const age    = parseFloat(document.getElementById("age").value);
+    const height = parseFloat(document.getElementById("height").value);
+    const weight = parseFloat(document.getElementById("weight").value);
+    const goal   = parseFloat(document.getElementById("goal").value);
+    const err    = document.getElementById("form-error");
+
+    if (!age || !height || !weight || !goal) {
+      err.style.display = "block";
+      return;
+    }
+    err.style.display = "none";
+
+    // フォームを隠してローディング表示
+    document.getElementById("form-area").style.display = "none";
+    document.getElementById("loading").style.display   = "block";
+
+    const data = {
+      userId,
+      age,
+      height,
+      weight,
+      goal,
+      actLevel,
+      gender,
+    };
+
+    fetch(GAS_URL, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify(data),
+    })
+    .then(() => {
+      document.getElementById("loading").style.display = "none";
+      document.getElementById("done").style.display    = "block";
+      // 3秒後にLIFF画面を閉じる
+      setTimeout(() => liff.closeWindow(), 3000);
+    })
+    .catch(err => {
+      console.error("送信エラー:", err);
+      document.getElementById("loading").style.display = "none";
+      document.getElementById("form-area").style.display = "block";
+      alert("送信に失敗しました。もう一度お試しください。");
+    });
+  }
+</script>
+</body>
+</html>
